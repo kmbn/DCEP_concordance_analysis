@@ -6,9 +6,9 @@ import json
 def grade_concordance():
     concordance = load_concordance()
     print()
-    settings = load_settings(concordance)
+    settings = get_settings(concordance)
     print()
-    results = grade(concordance)
+    results = grade(concordance, settings)
     filename = save_results(concordance, results)
     print()
     print('Grading completed.')
@@ -32,17 +32,19 @@ def load_concordance():
     return concordance
 
 
-def load_settings(concordance):
-    settings = ('Concordance of %s(%s) and %s(%s).' % \
+def get_settings(concordance):
+    setup = ('Concordance of %s(%s) and %s(%s).' % \
         (concordance['params']['first_word'], \
         concordance['params']['first_lang'], \
         concordance['params']['second_word'], \
         concordance['params']['second_lang']))
-    print(settings)
+    print(setup)
+    print()
+    settings = input('Return only general context? (y/n) ')
     return settings
 
 
-def grade(concordance):
+def grade(concordance, settings):
     translations = list()
     false_positives = list()
     trans_count = 0
@@ -55,19 +57,46 @@ def grade(concordance):
         print('Grading %s of %s:' % (grade_count, \
             concordance['results']['poss_matches']))
         print()
-        print(split_line[3])
-        print()
-        print(split_line[5].rstrip('\n'))
-        print()
-        answer = input('Is %s a translation of %s (or vice versa)? (y/n) ' % \
+        if settings == 'n':
+            print(split_line[3])
+            print()
+            print(split_line[5].rstrip('\n'))
+            print()
+        elif settings == 'y':
+            ind = re.search(concordance['params']['first_regex'], split_line[3]).start()
+            if ind < 40:
+                ind = 40
+            print(split_line[3][ind-40:ind+40])
+            print()
+            ind = re.search(concordance['params']['first_regex'], split_line[5]).start()
+            if ind < 40:
+                ind = 40
+            print(split_line[5][ind-40:ind+40])
+            print()
+        answer = input('Is %s a translation of %s (or vice versa)? (y/n/u) ' % \
             (concordance['params']['first_word'], \
             concordance['params']['second_word']))
         if answer == 'y':
             translations.append(i)
             trans_count += 1
-        if answer == 'n':
+        elif answer == 'n':
             false_positives.append(i)
             false_count += 1
+        elif answer == 'u':
+            print()
+            print(split_line[3])
+            print()
+            print(split_line[5])
+            print()
+            answer = input('Is %s a translation of %s (or vice versa)? (y/n/u) ' % \
+            (concordance['params']['first_word'], \
+            concordance['params']['second_word']))
+            if answer == 'y':
+                translations.append(i)
+                trans_count += 1
+            if answer == 'n':
+                false_positives.append(i)
+                false_count += 1
     results = {'false_count': false_count, 'trans_count': trans_count, \
         'translations': translations, 'false_positives': false_positives}
     return results
