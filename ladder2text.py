@@ -62,10 +62,15 @@ def holeToBisegment(hole,hulines,enlines) :
 
     #serializeSens(huSens, enSens, quality, delimiter)
 
-def serializeBisegment(huSens,enSens,quality=None,delimiter=" ~~~ ") :
+def serializeBisegment(huSens,enSens,huFile,document_title,enFile,quality=None,delimiter=" ~~~ ") :
     huText = delimiter.join(huSens)
     enText = delimiter.join(enSens)
-    text = huText+"\t"+enText
+    # Get the index of the document id so we can strip the extra file system info
+    ind = re.search(r"\/([0-9])", huFile).start() + 1
+    # Get the document id
+    document_id = huFile[ind:-9]
+    # Now add document id and title as well as languages to each output string
+    text = document_id+"\t"+document_title+"\t"+huFile[-6:-4]+"\t"+huText+"\t"+enFile[-6:-4]+"\t"+enText
     if quality is not None :
 	text += "\t"+str(quality)
     return text
@@ -157,9 +162,12 @@ def process(ladderFile, huFile, enFile, justBisen, delimiter, topoFilterLevel, l
     ladderLines = readfile(ladderFile)
     huSentences = readfile(huFile)
     enSentences = readfile(enFile)
+    # Get document title from first string of each file
+    with open(huFile, 'r') as f:
+        document_title = f.readline().rstrip('\n')
     ladder = map( parseLadderLine, ladderLines )
     bisegments = ladderToBisegments(ladder, huSentences, enSentences, justBisen, topoFilterLevel, lengthFilterLevel, sentenceDetector)
-    lines = [ serializeBisegment(huSens,enSens,quality,delimiter) for huSens,enSens,quality in bisegments ]
+    lines = [ serializeBisegment(huSens,enSens,huFile,document_title,enFile,quality,delimiter) for huSens,enSens,quality in bisegments ]
     return "\n".join(lines)+"\n"
 
 
