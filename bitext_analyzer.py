@@ -26,13 +26,20 @@ def get_params():
     # Get bitext file to analyze
     input_file = input('Enter filename: ')
     # Set first language in bt file and search term
-    first_lang = input('Enter first language: ')
-    first_word = input('Enter first word: ')
+    with codecs.open(input_file, 'r', encoding='UTF-8') as f:
+        first_line = f.readline().split('\t')
+    if len(first_line) == 6:
+        first_lang = first_line[2]
+        second_lang = first_line[4]
+        print('Languages: %s and %s' % (first_lang, second_lang))
+    elif len(first_line) == 2:
+        first_lang = input('Enter first language: ')
+        second_lang = input('Enter second language: ')
+    first_word = input('Enter %s word: ' % (first_lang))
     first_alt_endings = input('Allow alternate endings? (y/n) ')
     first_regex = create_regex(first_word, first_alt_endings)
     # Set second language in bt file and search term
-    second_lang = input('Enter second language: ')
-    second_word = input('Enter second word: ')
+    second_word = input('Enter %s word: ' % (second_lang))
     second_alt_endings = input('Allow alternate endings? (y/n) ')
     second_regex = create_regex(second_word, second_alt_endings)
     lang_pair = str(first_lang + '_' + second_lang)
@@ -62,12 +69,10 @@ def search_for_matches(params):
         lines_searched += 1
         if re.search(fre, line): # if one of the search words in a line, we check the line
             split_line = re.split(r'\t+', line) # split line at the tab so we can check each translation independently—important if a word is used in both languages, like 'actual' in EN/ES/FR
-            if re.search(fre, split_line[0]) and \
-               re.search(sre, split_line[1]): # do a closer examination to see if there might be a translation in the sentence pair
+            if re.search(fre, split_line[3]) and \
+               re.search(sre, split_line[5]): # do a closer examination to see if there might be a translation in the sentence pair
                 poss_matches += 1
-                poss_lines.append({'line_nr': lines_searched, \
-                                 params['first_lang']:split_line[0], \
-                                 params['second_lang']: split_line[1]})
+                poss_lines.append(line)
     results = {'lines_searched': lines_searched, 'poss_matches': poss_matches, 'poss_lines': poss_lines}
     return results
 
